@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Derived / regenerable data (rebuilt by notebooks/01_cleaning_eda.ipynb)
+data/processed/
