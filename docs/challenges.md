@@ -226,11 +226,38 @@ just AUC.
 
 *Where:* [03_modeling §8.2](../notebooks/03_modeling.ipynb).
 
+### 14. Out-of-time test on the post-2025-05 export — attempted, then excluded
+
+**Tension.** A true out-of-time test on the newest data (the post-2025-05 export) would be
+the strongest possible validation: score animals the model has never seen, from a period
+after all training data. It is the obvious next step.
+
+**Decision.** **Attempt it, then exclude it** and record it as future work — the new export's
+schema is incompatible with the trained pipeline.
+
+**Why — three breaking mismatches, not cosmetic ones:**
+
+- **Intake reasons are re-categorized.** The new system uses a different reason taxonomy, so
+  `intake_reason` — the strongest dog feature (#8) — no longer maps onto the categories the
+  encoders were fit on.
+- **Population changed.** The export now includes non-adoption **TNR community cats** (trap-
+  neuter-return), which are not adoption candidates and would have to be filtered out under a
+  new, unverified rule.
+- **`days_in_shelter` is inflated.** The new export aggregates across multiple visits, so the
+  stay length is no longer the single-visit quantity the pipeline assumes.
+
+Reconciling these — remapping the taxonomy, re-deriving the community-cat filter, and
+recomputing per-visit stay — was too costly to justify for this scope. The cleaner call is to
+exclude it rather than feed the pipeline silently-shifted inputs and report a misleading
+number. Documented as future work.
+
+*Where:* exploratory load in [new_system_data](../notebooks/new_system_data.ipynb).
+
 ---
 
 ## E. Tooling & reproducibility
 
-### 14. Environment & stale notebook outputs
+### 15. Environment & stale notebook outputs
 
 - **XGBoost / `libomp` load error** on macOS — resolved by running on a dedicated
   `aac-model` kernel with `DYLD_FALLBACK_LIBRARY_PATH` set, so `xgboost` + `shap` import
