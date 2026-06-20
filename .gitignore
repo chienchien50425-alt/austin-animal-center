@@ -10,6 +10,11 @@ venv/
 # Jupyter
 .ipynb_checkpoints/
 
+# Secrets / connection config — NEVER commit. Use .env.example as the template.
+.env
+.env.*
+!.env.example
+
 # Claude Code local tooling
 .claude/
 
