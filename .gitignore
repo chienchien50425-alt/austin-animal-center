@@ -27,3 +27,6 @@ outputs/*.html
 # Archived is_adopted-target notebooks (superseded by the is_long_stay pipeline)
 notebooks/is_adopted/
 notebooks/new system/
+
+# Local-only Azure SQL upload notebook
+notebooks/upload to azure SQL server.ipynb
