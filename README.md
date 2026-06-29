@@ -69,36 +69,56 @@ Stage 3 · Processed Dataset — Writes df_full_merged.csv to disk (162,465 rows
 
 Stage 4 · EDA (02_eda) — Exploratory analysis; its findings inform the feature choices used in modeling.  
 
-Stage 5 · Modeling (03_modeling) — Predicts is_long_stay separately per species using Logistic Regression and XGBoost. Outputs predictions only — writes no dataset.  
+Stage 5 · Modeling (03_modeling) — Predicts is_long_stay separately per species using Logistic Regression and XGBoost. Outputs predictions only.  
 
+### Key judgment calls:  
 
-### Following are the key judgment calls:  
+- Modelling dogs and cats separately.
+- Each outcome is matched to its arrival with a **backward `merge_asof`** on animal ID. Every departure is joined to its *most recent prior* intake. Drop outcomes with no matching intake (~0.5%) and outcomes re-claiming the same intake.
+- Long stay is derived from outcome, so *every* outcome-derived column is a leakage -> remove from features. 
+- Random split would cause data leakage in time-series data, so the model is trained on data up to year $Y-1$ and tested on year $Y$, walking forward from 2020 to 2024.
+  | fold | train years | test year | role |
+  |---|---|---|---|
+  | 1 | 2013–2019 | 2020 | test |
+  | 2 | 2013–2020 | 2021 | test |
+  | 3 | 2013–2021 | 2022 | **validation** (threshold decisions) |
+  | 4 | 2013–2022 | 2023 | **validation** (threshold decisions + feature selection) |
+  | 5 | 2013–2023 | 2024 | **reference** (test + interpretability) |
 
-- Each outcome is matched to its arrival with a **backward `merge_asof`** on animal ID:  
-Every departure is joined to its *most recent prior* intake. Orphan outcomes with no matching intake (~0.5%) and outcomes re-claiming the same intake are dropped, leaving one clean row per stay.
-
-- Long stay is derived from the outcome, so *every* outcome-derived column is a leakage source:  
-  - Outcome type, outcome subtype, outcome date, length of stay, is adopted, and outcome category are identified in cleaning and **physically excluded from the feature set** before any model sees them.
-  - The model is restricted to age at intake, breed, intake reason, intake health condition, spay/neuter status, sex, and is_mix. Colour and intake month were dropped by the mutual-information screen; intake date is used only to build folds, never as a feature.
-
-- Back-tested with **rolling-origin (expanding-window) validation**  
-Shelter populations drift year to year, so a random train/test split would let the
-future inform the past. Instead the model is trained on every year up to *Y−1*, test on year *Y*, walked
-forward across 2020→2024.
-
-- **Modelling dogs and cats separately**  
-The two species barely share a breed vocabulary (cats are ~80% Domestic Shorthair; dogs spread
-across Pit Bull, Labrador, Chihuahua, and dozens more) and in real life they need different resources including food, space and care. Pooling them would average away exactly the signal that matters.
-
-- **Keeping cat breed and spay/neuter or not is decided by ablation test on 2023 fold**
-
-  - *Cat breed*:  Mutual information against the target was a near-floor **0.001**, which argues for dropping it. But mutual information misses interaction effects, so a validation-fold ablation moved XGBoost AUC by just **+0.0013** with breed included. Effectively neutral, so it was **kept** on evidence of no harm rather than on a hunch.
-
-  - *Spay/neuter vs. age*:  These two are correlated (r ≈ 0.41 dog, 0.59 cat), raising a
-  redundancy worry. Dropping the spay/neuter slightly lowered validation AUC for both species (Δ ≈ −0.003) in LR, but this is within fold noise and does not favour either choice. Kept for feature-set parity with XGB.
+- Keeping cat breed and spay/neuter is decided by ablation test on 2023 fold
+  - Keep *Cat breed*:  Mutual information against the target was **0.001**, which argues for dropping it, but mutual information misses interaction effects. Validation-fold ablation moved XGBoost AUC by **+0.0013** with breed included, effectively neutral.
+  - Keep *Spay/neuter vs. age*:  These two are correlated (r ≈ 0.41 dog, 0.59 cat), raising a
+  redundancy worry. Dropping the spay/neuter slightly lowered validation AUC for both species (Δ ≈ −0.003) in LR, drop will slightly hurt performance.
 
 - **Handling imbalance**  
-Long-stay cases are the minority class (dog ≈ 0.1-0.3, cat ≈ 0.2-0.3), so a default 0.5 cutoff would systematically under-flag. Class imbalance is handled by re-weighting the positive class (class_weight='balanced'for LR and scale_pos_weight for XGBoost), recomputed per fold because the base rate drifts. The operating threshold is set to maximise F1 on the pooled 2022–2023.
+Long-stay cases are the minority class (dog ≈ 0.17-0.33, cat ≈ 0.17-0.34). Re-weighting the positive class (`class_weight='balanced'` for LR and `scale_pos_weight` for XGBoost). The operating threshold is set to maximise F1 on the pooled 2022–2023, not fixed 0.5.
+
+### Features — how each input is selected, encoded, or cleaned before modeling:
+ 
+| Feature handling | Dog | Cat | Where decided |
+|---|---|---|---|
+| Selected feature set | intake reason, breed, health condition, sex, age, `is_sn`, `is_mix` | same seven | MI / Pearson screening |
+| Dropped features | colour (primary/secondary/pattern), intake month | same | Near-floor MI (≤ 0.0013) |
+| Breed encoding | top-20 + Other | top-4 + Other | Top-4 covers 97.7% of cats; ablation test kept it |
+| `is_sn` (spay/neuter) | kept | kept | Collinearity ablation (Δ AUC ≈ −0.003) |
+| Age (XGBoost) | raw `age_at_intake_days` | same | Tree model, scale-invariant |
+| Age (Logistic Reg.) | 8 buckets: <2mo … 15yr+ | same | EDA |
+| Health condition | keep Normal / Injured / Sick / Nursing / Neonatal, rest → Other | same | Keep the well-populated levels, merge <1000 categories into 'Other' |
+| Encoder fitting | one-hot + top-N breeds, re-fit per fold on train only | same | Prevents fold-to-fold leakage |
+ 
+### Model & validation — training, tuning, and back-test setup:
+ 
+| Setting | Dog | Cat | Where decided |
+|---|---|---|---|
+| Long-stay threshold (target) | > 30 days | > 30 days |  From shelters announcement |
+| Operating threshold (XGBoost) | 0.417 | 0.455 | Max-F1 on pooled 2022–2023 |
+| Operating threshold (Logistic Reg.) | 0.446 | 0.517 | Same |
+| Class imbalance | per-fold `scale_pos_weight` (XGB) / balanced weights (LR) | same | Recomputed per fold as base rate drifts |
+| XGBoost tuning grid | depth ∈ {3, 5}, lr ∈ {0.03, 0.1}, n_estimators ≤ 800, early stop 30 | same | Nested CV (inner = last train year) |
+| Logistic Reg. | L2, C = 1.0, max_iter = 2000 | same | Fixed regularised baseline |
+| Back-test folds | test years 2020–2024, expanding window | same | Rolling-origin |
+| Validation / test fold | feature decisions on 2023; headline on 2024 | same | 2024 never used for selection/tuning |
+
 
 > 📊 Embed `confusion_matrix.png` and `auc_by_fold.png` from `03_modeling.ipynb` §9 — the two
 > strongest visual proofs of the result.
