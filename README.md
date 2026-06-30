@@ -64,7 +64,7 @@ the earlier 2022–2023 data).*
 <img width="1108" height="576" alt="Screenshot 2026-06-28 at 19 55 28" src="https://github.com/user-attachments/assets/44cce23f-80a4-4a6f-b77f-b1c3f05a611a" />
 Figure 3. The five-stage data-flow pipeline, from raw Austin Open Data exports to per-species modeling
 
-### The project runs as a five-stage data-flow pipeline:
+### The project runs as a five-stage data-flow pipeline
 
 Stage 1 · Raw Data Sources — Two CSV exports from the City of Austin Open Data Portal (2013-10-01 → 2025-05-05): an Intakes file (173,812 rows, one row per intake event) and an Outcomes file (173,775 rows, one row per outcome event).  
 
@@ -90,18 +90,16 @@ Stage 5 · Modeling (03_modeling) — Predicts is_long_stay separately per speci
   | 4 | 2013–2022 | 2023 | **validation** (threshold decisions + feature selection) |
   | 5 | 2013–2023 | 2024 | **reference** (test + interpretability) |
 
-  - The 2020–2022 test folds drive no decisions; they trace test AUC over time. They uncover the dog model's 2023 drop as a structural result and show the cat model stays flat across the same years.
-  - In 2023, the dog long_stay rate jumps structurally (Dog +0.124 from baseline) for reasons the recorded fields don't explain. Pooling 2022 (0.219) and 2023 (0.315) places the cut-point between the pre- and post-jump regimes, making it more robust for 2024 deploymen. Cats show no jump but use the same rule for parity.
-  - Feature selection uses 2023 alone. Unlike a threshold cut, which will be moved by base-rate jump, feature keep/drop is AUC comparison, and AUC is a ranking measure largely unaffected by a base-rate shift. 
-
-- Feature selection of breed and spay/neuter is decided by ablation test on 2023 fold
+- The 2020–2022 test folds drive no decisions; they trace test AUC over time. They uncover the dog model's 2023 drop as a structural result and show the cat model stays flat across the same years.
+- In 2023, the dog long_stay rate jumps structurally (Dog +0.096 from 2022) for reasons the recorded fields don't explain. Pooling 2022 (0.219) and 2023 (0.315) places the cut-point between the pre- and post-jump regimes, making it more robust for 2024 deployment. Cats show no jump but use the same rule for parity.
+- Feature selection of breed and spay/neuter is decided by ablation on single 2023 fold. This holds on one year because an ablation compares AUC with vs. without a feature, and AUC is a ranking measure largely unaffected by a base-rate shift and the 2023 jump is broad-based (a uniform lift, not a structural reshuffle).
   - Keep *Cat breed*:  Mutual information against the target was **0.001**, which argues for dropping it, but mutual information misses interaction effects. Validation-fold ablation moved XGBoost AUC by **+0.0013** with breed included, effectively neutral.
   - Keep *Spay/neuter vs. age*:  These two are correlated (r ≈ 0.41 dog, 0.59 cat), raising a
   redundancy worry. Dropping the spay/neuter slightly lowered validation AUC for both species (Δ ≈ −0.003) in LR, drop will slightly hurt performance.
 - Handling imbalance  
-Long-stay cases are the minority class (dog ≈ 0.17-0.33, cat ≈ 0.17-0.34). Re-weighting the positive class (`class_weight='balanced'` for LR and `scale_pos_weight` for XGBoost). The operating threshold is set to maximise F1 on the pooled 2022–2023, not fixed 0.5.
+Long-stay cases are the minority class (dog ≈ 0.17-0.33, cat ≈ 0.17-0.34). Re-weighting the positive class (`class_weight='balanced'` for LR and `scale_pos_weight` for XGBoost). 
 
-### Features — how each input is selected, encoded, or cleaned before modeling:
+### Features — how each input is selected, encoded, or cleaned before modeling
  
 | Feature handling | Dog | Cat | Where decided |
 |---|---|---|---|
