@@ -71,7 +71,7 @@ Stage 4 · EDA (02_eda) — Exploratory analysis; its findings inform the featur
 
 Stage 5 · Modeling (03_modeling) — Predicts is_long_stay separately per species using Logistic Regression and XGBoost. Outputs predictions only.  
 
-### Key judgment calls:  
+### Key judgment calls   
 
 - Modelling dogs and cats separately.
 - Each outcome is matched to its arrival with a **backward `merge_asof`** on animal ID. Every departure is joined to its *most recent prior* intake. Drop outcomes with no matching intake (~0.5%) and outcomes re-claiming the same intake.
@@ -85,7 +85,7 @@ Stage 5 · Modeling (03_modeling) — Predicts is_long_stay separately per speci
   | 4 | 2013–2022 | 2023 | **validation** (threshold decisions + feature selection) |
   | 5 | 2013–2023 | 2024 | **reference** (test + interpretability) |
 
-- Keeping cat breed and spay/neuter is decided by ablation test on 2023 fold
+- Feature selection of breed and spay/neuter is decided by ablation test on 2023 fold
   - Keep *Cat breed*:  Mutual information against the target was **0.001**, which argues for dropping it, but mutual information misses interaction effects. Validation-fold ablation moved XGBoost AUC by **+0.0013** with breed included, effectively neutral.
   - Keep *Spay/neuter vs. age*:  These two are correlated (r ≈ 0.41 dog, 0.59 cat), raising a
   redundancy worry. Dropping the spay/neuter slightly lowered validation AUC for both species (Δ ≈ −0.003) in LR, drop will slightly hurt performance.
