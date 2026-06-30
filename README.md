@@ -62,6 +62,7 @@ the earlier 2022–2023 data).*
 ## 4. How it works — data, modelling, and the judgment calls
 
 <img width="1108" height="576" alt="Screenshot 2026-06-28 at 19 55 28" src="https://github.com/user-attachments/assets/44cce23f-80a4-4a6f-b77f-b1c3f05a611a" />
+Figure 3. The five-stage data-flow pipeline, from raw Austin Open Data exports to per-species modeling
 
 ### The project runs as a five-stage data-flow pipeline:
 
