@@ -85,12 +85,15 @@ Stage 5 · Modeling (03_modeling) — Predicts is_long_stay separately per speci
   | 4 | 2013–2022 | 2023 | **validation** (threshold decisions + feature selection) |
   | 5 | 2013–2023 | 2024 | **reference** (test + interpretability) |
 
+  - The 2020–2022 test folds drive no decisions; they trace test AUC over time. They uncover the dog model's 2023 drop as a structural result and show the cat model stays flat across the same years.
+  - In 2023, the dog long_stay rate jumps structurally (Dog +0.124 from baseline) for reasons the recorded fields don't explain. Pooling 2022 (0.219) and 2023 (0.315) places the cut-point between the pre- and post-jump regimes, making it more robust for 2024 deploymen. Cats show no jump but use the same rule for parity.
+  - Feature selection uses 2023 alone. Unlike a threshold cut, which will be moved by base-rate jump, feature keep/drop is AUC comparison, and AUC is a ranking measure largely unaffected by a base-rate shift. 
+
 - Feature selection of breed and spay/neuter is decided by ablation test on 2023 fold
   - Keep *Cat breed*:  Mutual information against the target was **0.001**, which argues for dropping it, but mutual information misses interaction effects. Validation-fold ablation moved XGBoost AUC by **+0.0013** with breed included, effectively neutral.
   - Keep *Spay/neuter vs. age*:  These two are correlated (r ≈ 0.41 dog, 0.59 cat), raising a
   redundancy worry. Dropping the spay/neuter slightly lowered validation AUC for both species (Δ ≈ −0.003) in LR, drop will slightly hurt performance.
-
-- **Handling imbalance**  
+- Handling imbalance  
 Long-stay cases are the minority class (dog ≈ 0.17-0.33, cat ≈ 0.17-0.34). Re-weighting the positive class (`class_weight='balanced'` for LR and `scale_pos_weight` for XGBoost). The operating threshold is set to maximise F1 on the pooled 2022–2023, not fixed 0.5.
 
 ### Features — how each input is selected, encoded, or cleaned before modeling:
@@ -119,9 +122,8 @@ Long-stay cases are the minority class (dog ≈ 0.17-0.33, cat ≈ 0.17-0.34). R
 | Back-test folds | test years 2020–2024, expanding window | same | Rolling-origin |
 | Validation / test fold | feature decisions on 2023; headline on 2024 | same | 2024 never used for selection/tuning |
 
-
-> 📊 Embed `confusion_matrix.png` and `auc_by_fold.png` from `03_modeling.ipynb` §9 — the two
-> strongest visual proofs of the result.
+<img width="1412" height="532" alt="image" src="https://github.com/user-attachments/assets/88f0705c-7675-4015-a7e2-725568e3a0b6" />
+<img width="1082" height="862" alt="image" src="https://github.com/user-attachments/assets/49c9121b-08a2-44f7-bcb0-5d6c7dc3fc02" />
 
 ---
 
