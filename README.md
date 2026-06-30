@@ -53,6 +53,10 @@ future year (2024) the models never saw during development:
 *Scored on the 2024 test year at the chosen threshold (To maximise F1 on
 the earlier 2022–2023 data).*
 
+| <img width="400" alt="Untitled design" src="https://github.com/user-attachments/assets/1678d1b4-5bb0-4e99-8961-c1ae543d0242" /> | <img width="750" alt="image" src="https://github.com/user-attachments/assets/49c9121b-08a2-44f7-bcb0-5d6c7dc3fc02" /> |
+| :---: | :---: |
+| Figure 1. Test AUC by fold (2020–2024), per species and model. | Figure 2. Confusion matrices on the 2024 test fold, per species and model (at each model's operating threshold). |
+
 ---
 
 ## 4. How it works — data, modelling, and the judgment calls
@@ -121,9 +125,6 @@ Long-stay cases are the minority class (dog ≈ 0.17-0.33, cat ≈ 0.17-0.34). R
 | Logistic Reg. | L2, C = 1.0, max_iter = 2000 | same | Fixed regularised baseline |
 | Back-test folds | test years 2020–2024, expanding window | same | Rolling-origin |
 | Validation / test fold | feature decisions on 2023; headline on 2024 | same | 2024 never used for selection/tuning |
-
-<img width="1412" height="532" alt="image" src="https://github.com/user-attachments/assets/88f0705c-7675-4015-a7e2-725568e3a0b6" />
-<img width="1082" height="862" alt="image" src="https://github.com/user-attachments/assets/49c9121b-08a2-44f7-bcb0-5d6c7dc3fc02" />
 
 ---
 
