@@ -112,7 +112,7 @@ Long-stay cases are the minority class (dog ≈ 0.17-0.33, cat ≈ 0.17-0.34). R
 | Health condition | keep Normal / Injured / Sick / Nursing / Neonatal, rest → Other | same | Keep the well-populated levels, merge <1000 categories into 'Other' |
 | Encoder fitting | one-hot + top-N breeds, re-fit per fold on train only | same | Prevents fold-to-fold leakage |
  
-### Model & validation — training, tuning, and back-test setup:
+### Model & validation — training, tuning, and back-test setup
  
 | Setting | Dog | Cat | Where decided |
 |---|---|---|---|
@@ -130,23 +130,38 @@ Long-stay cases are the minority class (dog ≈ 0.17-0.33, cat ≈ 0.17-0.34). R
 ## 5. What actually drives a long stay
 
 Drivers are read from **SHAP values on the reference-fold model** (train ≤ 2023), not impurity
-importance — the latter is biased toward high-cardinality features like breed. The per-species
-split pays off here, because the stories are genuinely different:
+importance (biased toward high-cardinality features like breed):
 
-- **Dogs.** **Age at intake** is by far the strongest driver, followed by **Pit Bull breed**,
-  **owner-surrender intakes**, and **spay/neuter status**. The age effect is *non-monotonic*:
-  the youngest puppies (under ~2 months) carry the highest long-stay risk (~27%), risk
-  collapses in adolescence (~5% at 2–6 months), climbs again through prime adulthood, then
-  falls for seniors. Owner-surrendered and abandoned dogs linger more than strays.
+<img align="left" width="550" src="https://github.com/user-attachments/assets/7726dbe5-1f14-48e7-89c0-d18aed45dce3">
 
-- **Cats.** **Age at intake** again dominates, then **unknown-sex intakes** (typically
-  unweaned kittens logged before they can be sexed), **mix status**, and **spay/neuter status**.
-  Here age trends the *opposite* way to dogs at the top end: very young kittens are highest-risk
-  (~40%), and risk *rises* again into the senior years rather than falling. This mirror-image
-  age curve is the clearest single reason the two species can't share one model.
+**Figure 4. SHAP summary for the dog XGBoost model**  
 
-> 📊 Embed `shap_summary_dog.png` and `shap_summary_cat.png` from `03_modeling.ipynb` §10.2.
-> The bullets above are written to stand on their own if the images fail to load.
+Each dot is one dog; x-position is that feature's push on the prediction (right = toward long-stay, left = toward faster exit). Color encodes the feature's value: for age, red = older; for 0/1 features (breed, owner-surrender, spay/neuter), red = positive.  
+
+Age ranks first, and its red/blue spread on both sides is the non-monotonic effect. Pit Bull, owner-surrender and injured push toward long-stay; small popular breeds (Chihuahua, Dachshund, Miniature Schnauzer, Miniature Poodle) push the other way.
+
+<br clear="left"/>
+<br><br>
+
+<img align="left" width="550" src="https://github.com/user-attachments/assets/732c1b6e-ebf2-490a-a052-1ccf9222a188" /> 
+
+**Figure 5. SHAP summary for the cat XGBoost model**  
+
+Each dot is one cat; x-position is the feature's push (right = toward long-stay, left = toward faster exit); color is the feature's value (for age, red = older; for 0/1 features, red = present).  
+
+Age ranks first with a non-monotonic red/blue spread. Sex_Unknown: present (red) pushes strongly left; These intakes are overwhelmingly newborn kittens (median age 22 days) transferred out on day 0 (~86% transfer, ~0% adoption) — likely too young to be sexed at intake, and routed straight to foster/rescue rather than entering the shelter pipeline. In contrast, Owner-surrender, nursing and injured push toward long-stay.
+
+
+<br clear="left"/>
+<br><br>
+
+<img align="left" width="550" src="https://github.com/user-attachments/assets/1fe58e34-d395-4f07-b8aa-7a9aed40e1d8" />
+
+**Figure 6. Long-stay rate by age at intake, dogs vs cats**  
+
+In EDA we can see the age effect is *non-monotonic* for both dog and cat: the youngest puppies (under ~2 months) carry the highest long-stay risk (~27%), risk collapses in adolescence (~5% at 2–6 months), climbs again through prime adulthood, then falls for seniors. Very young kittens are highest-risk (~40%), and risk *rises* again into the senior years rather than falling.
+
+<br clear="left"/>
 
 ---
 
