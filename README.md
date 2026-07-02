@@ -165,49 +165,18 @@ In EDA we can see the age effect is *non-monotonic* for both dog and cat: the yo
 
 ---
 
-## 6. Challenges & learnings
+## 6. Limitation
 
-The hard parts of this project weren't in the modelling library — they were in the problem
-definition and the data itself.
-
-**The dog model has a real distribution shift, and I chose to report it rather than bury it.**
-Dog AUC holds around 0.78 through 2022, then drops to ~0.69 in 2023 and doesn't recover
-(fold-to-fold std of 0.043 for dogs vs. just 0.008 for cats — the cat model is stable, the dog
-model is not). The cause is visible in the data: the dog long-stay base rate jumps from 0.246
-(2022) to 0.307 (2023), a structural shift in the dog population — almost certainly post-pandemic
-shelter dynamics (intake surges, slower adoptions, capacity pressure). A diagnostic in the
-modelling notebook confirms the jump is dog-specific and broad-based across every intake reason,
-*not* traceable to any single category — which means the recorded fields don't fully explain it.
-The honest takeaway: in production I'd treat the dog flag as lower-confidence than the cat flag,
-monitor its AUC quarterly, and retrain on a rolling recent window rather than the full
-2013→ history. Building the time-aware back-test is what surfaced this at all; a random split
-would have hidden it.
-
-**The data only sees animals the shelter took in — a built-in selection bias.**
-Every record here is an animal that *entered* this shelter. Animals rehomed privately,
-surrendered elsewhere, or never picked up at all are invisible. So the model learns "what makes
-a long stay *given that an animal is already in Austin's system*," not "what makes an animal
-hard to place" in general. That's the right scope for this shelter's operational question, but
-it's a ceiling on how far the conclusions can travel.
-
-**Defining the target was a business decision, not a data one.**
-"Long stay" isn't a fact in the data — it's the shelter's >30-day operating line. A different
-threshold would change who gets flagged and shift every metric. Anchoring to the shelter's own
-definition keeps the tool aligned with how staff actually think, but it's worth stating plainly
-that the target itself is a choice.
-
-**If I did it again,** I'd push hardest on the dog distribution shift: bring in external signals
-the raw exports don't carry (local adoption demand, seasonal capacity, kennel occupancy at
-intake) to see whether the unexplained 2023 jump becomes explainable. Better-calibrated
-probabilities (an isotonic/Platt layer on a held-out fold) would also make the score easier to
-hand to staff as a real likelihood rather than a ranking.
-
-**Scope, stated plainly.** Dogs and cats only; Austin only; one shelter's definition of "long
-stay." Generalisation to other shelters is untested.
 
 ---
 
-## 7. Pipeline & repository
+
+## 7. Lesson learn
+
+
+---
+
+## 8. Pipeline & repository
 
 ```
 01_cleaning.ipynb  →  02_eda.ipynb  →  03_modeling.ipynb
